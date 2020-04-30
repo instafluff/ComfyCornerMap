@@ -1,0 +1,82 @@
+<html>
+	<head>
+		<title>Comfy Corner Map</title>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+  crossorigin=""/>
+		<!-- Make sure you put this AFTER Leaflet's CSS -->
+		<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+		  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+		  crossorigin=""></script>
+		<script src="https://cdn.jsdelivr.net/npm/comfy.js@latest/dist/comfy.min.js"></script>
+		<link href="https://fonts.googleapis.com/css?family=Bubblegum+Sans&amp;display=swap" rel="stylesheet">
+		<style>
+		img[src*="tile.openstreetmap.org"] {
+			filter: hue-rotate(200deg);
+		}
+		#map { height: 460px;
+		}
+		body {
+			padding: 1.5em;
+			min-height: 100vh;
+			background-color: #FFAD15;
+			background-image: linear-gradient(147deg, #FFAD15 0%, #FFD166 100%);
+	        font-family: 'Bubblegum Sans';
+	        /* font-size: 26; */
+	        font-weight: 800;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>The Comfy Corner Map! - !checkin location</h1>
+		<div id="map"></div>
+
+		<script>
+		var map = L.map('map').setView([51.5, -0.09], 1);
+
+		L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo( map );
+
+		var mapPeeps = {};
+
+		async function loadMap() {
+			let everyone = await fetch( `/everyone` ).then( r => r.json() );
+			// console.log( everyone );
+			everyone.forEach( ( x, i ) => {
+				if( !mapPeeps[ x.userId ] || mapPeeps[ x.userId ].location != x.location ) {
+					mapPeeps[ x.userId ] = Object.assign( mapPeeps[ x.userId ] || {}, x );
+					var icon = L.icon({
+						iconUrl: x.image || "https://static-cdn.jtvnw.net/emoticons/v1/1037931/3.0",
+						// shadowUrl: 'leaf-shadow.png',
+
+						iconSize:     [ 32, 32 ], // size of the icon
+						// shadowSize:   [ 50, 64 ], // size of the shadow
+						// iconAnchor:   [ 22, 94 ], // point of the icon which will correspond to marker's location
+						// shadowAnchor: [ 4, 62 ],  // the same for the shadow
+						// popupAnchor:  [ -3, -76 ] // point from which the popup should open relative to the iconAnchor
+					});
+					if( mapPeeps[ x.userId ].marker ) {
+						// console.log( x );
+						mapPeeps[ x.userId ].marker.setLatLng( [ parseFloat( x.lat ) + Math.random() * 1.0 - 0.5, parseFloat( x.lon ) + Math.random() * 1.0 - 0.5 ] );
+					}
+					else {
+						mapPeeps[ x.userId ].marker = L.marker( [ parseFloat( x.lat ) + Math.random() * 1.0 - 0.5, parseFloat( x.lon ) + Math.random() * 1.0 - 0.5 ], { icon: icon, title: x.displayName, riseOnHover: true } ).addTo( map ).bindPopup( x.displayName );
+					}
+				}
+			});
+		}
+		loadMap();
+
+		// L.marker([51.5, -0.09]).addTo(map)
+		// .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
+		// .openPopup();
+		ComfyJS.onCommand = ( user, command, message, flags, extra ) => {
+			if( command === "checkin" ) {
+				setTimeout( loadMap, 3000 );
+			}
+		};
+		ComfyJS.Init( "instafluff" );
+		</script>
+	</body>
+</html>
